@@ -6,11 +6,17 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"os"
 )
 
 func main() {
 	initDB() // connect to MongoDB
 	loadJWTConfig()
+
+	 port := os.Getenv("PORT")
+    if port == "" {
+        port = "8080" // local dev fallback
+    }
 
 	r := mux.NewRouter()
 
@@ -38,6 +44,6 @@ func main() {
 	origins := handlers.AllowedOrigins([]string{"http://localhost:5174"})
 
 	fmt.Println("🚀 Server running on http://localhost:8080")
-	http.ListenAndServe(":8080", handlers.CORS(headers, methods, origins)(r))
+	http.ListenAndServe(":"+port, handlers.CORS(headers, methods, origins)(r))
 
 }
