@@ -39,9 +39,10 @@ func main() {
 	hr.Handle("/leave/{index}/grant", requireHRAuth(http.HandlerFunc(hrGrantLeaveHandler))).Methods("POST")
 	hr.Handle("/leave/{index}/decline", requireHRAuth(http.HandlerFunc(hrDeclineLeaveHandler))).Methods("POST")
 
+	allowedOrigins := []string{"*"}
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
 	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
-	origins := handlers.AllowedOrigins([]string{"http://localhost:5174"})
+	origins := handlers.AllowedOrigins(allowedOrigins)
 
 	fmt.Println("🚀 Server running on http://localhost:8080")
 	http.ListenAndServe(":"+port, handlers.CORS(headers, methods, origins)(r))
