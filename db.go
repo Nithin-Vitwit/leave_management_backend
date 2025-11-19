@@ -20,12 +20,10 @@ var (
 	leaveCol    *mongo.Collection
 	hrPassword  string
 )
-
 func initDB() {
-	// Load .env
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+	// Load .env ONLY in local (not on Render)
+	if os.Getenv("RENDER") == "" {
+		_ = godotenv.Load()
 	}
 
 	mongoURI := os.Getenv("MONGO_URI")
@@ -33,7 +31,7 @@ func initDB() {
 	hrPassword = os.Getenv("HR_PASSWORD")
 
 	if mongoURI == "" || dbName == "" {
-		log.Fatal("❌ Missing MongoDB configuration in .env")
+		log.Fatal("❌ Missing MongoDB environment variables")
 	}
 
 	// Connect to MongoDB
@@ -41,9 +39,16 @@ func initDB() {
 	defer cancel()
 
 	clientOpts := options.Client().ApplyURI(mongoURI)
+	var err error
 	client, err = mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Fatal("MongoDB connection failed:", err)
+	}
+
+	// Check connection
+	err = client.Ping(ctx, nil)
+	if err != nil {
+		log.Fatal("❌ MongoDB ping failed:", err)
 	}
 
 	db = client.Database(dbName)
