@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	
+	"log"
 	"os"
 	"time"
 
-	// Removed: "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -21,18 +21,19 @@ var (
 	hrPassword  string
 )
 
-// initDB is modified to return an error instead of using log.Fatal
-// This allows the caller (main) to log the error gracefully and exit.
-func initDB() error {
-	// *** RENDER FIX: Removed godotenv.Load(), relying on OS environment variables ***
+func initDB() {
+	// Load .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
 
 	mongoURI := os.Getenv("MONGO_URI")
 	dbName := os.Getenv("DB_NAME")
 	hrPassword = os.Getenv("HR_PASSWORD")
 
 	if mongoURI == "" || dbName == "" {
-		// Log the error and return it to main()
-		return fmt.Errorf("❌ Missing MongoDB configuration. Ensure MONGO_URI and DB_NAME are set in environment variables")
+		log.Fatal("❌ Missing MongoDB configuration in .env")
 	}
 
 	// Connect to MongoDB
@@ -40,16 +41,9 @@ func initDB() error {
 	defer cancel()
 
 	clientOpts := options.Client().ApplyURI(mongoURI)
-	var err error
 	client, err = mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		// Log the connection error and return it
-		return fmt.Errorf("MongoDB connection failed: %w", err)
-	}
-
-	// Ping the database to ensure connection is live
-	if err = client.Ping(ctx, nil); err != nil {
-		return fmt.Errorf("MongoDB ping failed: %w", err)
+		log.Fatal("MongoDB connection failed:", err)
 	}
 
 	db = client.Database(dbName)
@@ -57,6 +51,5 @@ func initDB() error {
 	hrCol = db.Collection("hrs")
 	leaveCol = db.Collection("leaves")
 
-	fmt.Println("✅ Successfully connected to MongoDB.")
-	return nil
+	fmt.Println("✅ Connected to MongoDB Atlas!")
 }
