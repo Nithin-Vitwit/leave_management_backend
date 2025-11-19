@@ -1,7 +1,6 @@
 package main
 
 import (
-	
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -11,7 +10,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/joho/godotenv"
+	// Removed: "github.com/joho/godotenv"
 )
 
 var jwtSecret string
@@ -19,10 +18,11 @@ var jwtExpiryHours int
 
 // Load JWT environment variables
 func loadJWTConfig() {
-	_ = godotenv.Load()
+	// *** RENDER FIX: Removed godotenv.Load(), relying on OS environment variables ***
+	
 	jwtSecret = os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
-		jwtSecret = "default_secret"
+		jwtSecret = "default_secret" // Fallback for local testing
 	}
 
 	expStr := os.Getenv("JWT_EXP_HOURS")
@@ -35,11 +35,13 @@ func loadJWTConfig() {
 			jwtExpiryHours = 2
 		}
 	}
+    fmt.Println("✅ JWT config loaded.")
 }
 
 // HR Login: returns JWT token
 func hrLoginHandler(w http.ResponseWriter, r *http.Request) {
-	var req struct {
+    // ... (rest of the function is unchanged)
+    var req struct {
 		ID       string `json:"id"`
 		Password string `json:"password"`
 	}
@@ -77,7 +79,8 @@ func hrLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // Middleware to require HR JWT
 func requireHRAuth(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    // ... (rest of the function is unchanged)
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if auth == "" {
 			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
@@ -91,9 +94,9 @@ func requireHRAuth(next http.Handler) http.Handler {
 		}
 
 		tokenStr := parts[1]
-		tkn, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
-			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method")
+		tkn, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Method)
 			}
 			return []byte(jwtSecret), nil
 		})
